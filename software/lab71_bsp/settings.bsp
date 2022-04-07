@@ -2,8 +2,8 @@
 <sch:Settings xmlns:sch="http://www.altera.com/embeddedsw/bsp/schema">
         <BspType>hal</BspType>
         <BspVersion>default</BspVersion>
-        <BspGeneratedTimeStamp>Mar 31, 2022 1:17:30 AM</BspGeneratedTimeStamp>
-        <BspGeneratedUnixTimeStamp>1648707450779</BspGeneratedUnixTimeStamp>
+        <BspGeneratedTimeStamp>Apr 6, 2022 9:00:50 PM</BspGeneratedTimeStamp>
+        <BspGeneratedUnixTimeStamp>1649296850271</BspGeneratedUnixTimeStamp>
         <BspGeneratedLocation>C:\Users\alijh\Documents\ECE385\lab7-ECE385\software\lab71_bsp</BspGeneratedLocation>
         <BspSettingsFile>settings.bsp</BspSettingsFile>
         <SopcDesignFile>..\..\lab7_soc.sopcinfo</SopcDesignFile>
@@ -984,8 +984,8 @@
         </MemoryMap>
         <MemoryMap>
                 <slaveDescriptor>VGA_text_mode_controller_0</slaveDescriptor>
-                <addressRange>0x00001000 - 0x00001FFF</addressRange>
-                <addressSpan>4096</addressSpan>
+                <addressRange>0x00004000 - 0x00007FFF</addressRange>
+                <addressSpan>16384</addressSpan>
                 <attributes/>
         </MemoryMap>
         <MemoryMap>

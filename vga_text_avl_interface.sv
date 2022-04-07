@@ -47,7 +47,7 @@ module vga_text_avl_interface (
 	output logic hs, vs						// VGA HS/VS
 );
 
-logic [31:0] LOCAL_REG       [`NUM_REGS]; // Registers
+//logic [31:0] LOCAL_REG [`NUM_REGS]; // Registers
 //put other local variables here
 logic pixel_clk, blank, sync;
 logic [9:0] DrawX, DrawY, Col, Row, CURR_REG, CURR_CHAR;
@@ -55,6 +55,9 @@ logic [7:0] char, BITS;
 logic [31:0] REG_DATA, COLOR_REG;
 logic [10:0] FONT_INPUT;
 logic [2:0] pixel;
+
+//week 2
+logic [9:0] ADDR;
 
 //Declare submodules..e.g. VGA controller, ROMS, etc
 //module  vga_controller ( input        Clk,       // 50 MHz clock
@@ -70,49 +73,51 @@ logic [2:0] pixel;
 												  
 vga_controller vga_controller(.Clk(CLK), .Reset(RESET), .hs(hs), .vs(vs), .pixel_clk(pixel_clk), .blank(blank), .sync(sync),
 					.DrawX(DrawX), .DrawY(DrawY));
+					
+byte_enabled_simple_dual_port_ram memBlock(.waddr(AVL_ADDR), .raddr(ADDR), .be(AVL_BYTE_EN), .wdata(AVL_WRITEDATA), .we(AVL_WRITE), .clk(CLK), .q(AVL_READDATA));
 //module font_rom ( input [10:0]	addr,
 //						output [7:0]	data
 //					 );
 font_rom font_row(.addr(FONT_INPUT), .data(BITS));
    
 // Read and write from AVL interface to register block, note that READ waitstate = 1, so this should be in always_ff
-always_ff @(posedge CLK) begin
-if(AVL_CS==1'b1)
-begin
-	if(AVL_WRITE==1'b1)
-	begin
-		case(AVL_BYTE_EN)
-			4'b0001:
-				LOCAL_REG[AVL_ADDR][7:0]=AVL_WRITEDATA[7:0];
-			4'b0010:
-				LOCAL_REG[AVL_ADDR][15:8]=AVL_WRITEDATA[15:8];
-			4'b0100:
-				LOCAL_REG[AVL_ADDR][23:16]=AVL_WRITEDATA[23:16];
-			4'b1000:
-				LOCAL_REG[AVL_ADDR][31:24]=AVL_WRITEDATA[31:24];
-			4'b0011:
-				LOCAL_REG[AVL_ADDR][15:0]=AVL_WRITEDATA[15:0];
-			4'b1100:
-				LOCAL_REG[AVL_ADDR][31:16]=AVL_WRITEDATA[31:16];
-			4'b1111:
-				LOCAL_REG[AVL_ADDR]=AVL_WRITEDATA;
-			default: LOCAL_REG[AVL_ADDR]=LOCAL_REG[AVL_ADDR];
-		endcase
-	end
-	else if(AVL_READ==1'b1)
-	begin
-		AVL_READDATA=LOCAL_REG[AVL_ADDR];
-	end
-  if(RESET==1'b1)
-	begin
-		int i;
-		for(i=0;i<601;i++)
-		begin
-			LOCAL_REG[i]=32'h0;
-		end
-	end
-end  //end the Chip select
-end //end the always_ff
+//always_ff @(posedge CLK) begin
+//if(AVL_CS==1'b1)
+//begin
+//	if(AVL_WRITE==1'b1)
+//	begin
+//		case(AVL_BYTE_EN)
+//			4'b0001:
+//				LOCAL_REG[AVL_ADDR][7:0]=AVL_WRITEDATA[7:0];
+//			4'b0010:
+//				LOCAL_REG[AVL_ADDR][15:8]=AVL_WRITEDATA[15:8];
+//			4'b0100:
+//				LOCAL_REG[AVL_ADDR][23:16]=AVL_WRITEDATA[23:16];
+//			4'b1000:
+//				LOCAL_REG[AVL_ADDR][31:24]=AVL_WRITEDATA[31:24];
+//			4'b0011:
+//				LOCAL_REG[AVL_ADDR][15:0]=AVL_WRITEDATA[15:0];
+//			4'b1100:
+//				LOCAL_REG[AVL_ADDR][31:16]=AVL_WRITEDATA[31:16];
+//			4'b1111:
+//				LOCAL_REG[AVL_ADDR]=AVL_WRITEDATA;
+//			default: LOCAL_REG[AVL_ADDR]=LOCAL_REG[AVL_ADDR];
+//		endcase
+//	end
+//	else if(AVL_READ==1'b1)
+//	begin
+//		AVL_READDATA=LOCAL_REG[AVL_ADDR];
+//	end
+//  if(RESET==1'b1)
+//	begin
+//		int i;
+//		for(i=0;i<601;i++)
+//		begin
+//			LOCAL_REG[i]=32'h0;
+//		end
+//	end
+//end  //end the Chip select
+//end //end the always_ff
 
 
 //handle drawing (may either be combinational or sequential - or both).
@@ -121,14 +126,19 @@ begin
 	 Col=DrawX[9:3]; //col=drawx/8
 	 Row=DrawY[9:4];  //row=drawy/16
 	
-	 CURR_REG=(Col+Row*80)/4; //=AVL_ADDR
+	// CURR_REG=(Col+Row*80)/4; //=AVL_ADDR
+	 ADDR=(Col+Row*80)/4;
 	
 	 CURR_CHAR=(Col+Row*80);  //80 char per row
-	
-	 REG_DATA=LOCAL_REG[CURR_REG];
-
-
-
+//end	
+//	 //REG_DATA=LOCAL_REG[CURR_REG];
+//always_ff @(posedge CLK)
+//begin
+		REG_DATA=AVL_READDATA;
+//end
+//
+//always_comb
+//begin
 	case(CURR_CHAR[1:0])
 		2'b00: char=REG_DATA[7:0];
 		2'b01: char=REG_DATA[15:8];
@@ -142,7 +152,12 @@ begin
 	//BITS has been updated 10010000
 	 pixel= 7- DrawX[2:0];
 	 
-	 COLOR_REG = LOCAL_REG[`CTRL_REG];
+	 //COLOR_REG = LOCAL_REG[`CTRL_REG];
+end
+
+always_ff @(posedge CLK)
+begin
+	 COLOR_REG = AVL_READDATA;
 end
 
 always_ff @(posedge pixel_clk)

@@ -57,7 +57,7 @@ int main()
 		if (checksum[j] != readsum[j])
 		{
 			printf ("Checksum mismatch!, check your Avalon-MM code\n\r");
-			while (1){};
+//			while (1){};
 		}
 	}
 	printf ("Checksum code passed!...starting color test \n\r");

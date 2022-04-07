@@ -148,8 +148,8 @@ module lab7_soc_mm_interconnect_0_router
     localparam PAD11 = log2ceil(64'h1f0 - 64'h1e0); 
     localparam PAD12 = log2ceil(64'h208 - 64'h200); 
     localparam PAD13 = log2ceil(64'h210 - 64'h208); 
-    localparam PAD14 = log2ceil(64'h2000 - 64'h1000); 
-    localparam PAD15 = log2ceil(64'h2800 - 64'h2000); 
+    localparam PAD14 = log2ceil(64'h1800 - 64'h1000); 
+    localparam PAD15 = log2ceil(64'h8000 - 64'h4000); 
     localparam PAD16 = log2ceil(64'hc000000 - 64'h8000000); 
     // -------------------------------------------------------
     // Work out which address bits are significant based on the
@@ -293,16 +293,16 @@ module lab7_soc_mm_interconnect_0_router
             src_data[PKT_DEST_ID_H:PKT_DEST_ID_L] = 3;
     end
 
-    // ( 0x1000 .. 0x2000 )
+    // ( 0x1000 .. 0x1800 )
     if ( {address[RG:PAD14],{PAD14{1'b0}}} == 28'h1000   ) begin
-            src_channel = 17'b00000000000000010;
-            src_data[PKT_DEST_ID_H:PKT_DEST_ID_L] = 0;
-    end
-
-    // ( 0x2000 .. 0x2800 )
-    if ( {address[RG:PAD15],{PAD15{1'b0}}} == 28'h2000   ) begin
             src_channel = 17'b00000000000001000;
             src_data[PKT_DEST_ID_H:PKT_DEST_ID_L] = 7;
+    end
+
+    // ( 0x4000 .. 0x8000 )
+    if ( {address[RG:PAD15],{PAD15{1'b0}}} == 28'h4000   ) begin
+            src_channel = 17'b00000000000000010;
+            src_data[PKT_DEST_ID_H:PKT_DEST_ID_L] = 0;
     end
 
     // ( 0x8000000 .. 0xc000000 )
