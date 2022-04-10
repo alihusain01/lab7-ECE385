@@ -38,7 +38,7 @@ module vga_text_avl_interface (
 	input  logic AVL_WRITE,					// Avalon-MM Write
 	input  logic AVL_CS,					// Avalon-MM Chip Select
 	input  logic [3:0] AVL_BYTE_EN,			// Avalon-MM Byte Enable
-	input  logic [9:0] AVL_ADDR,			// Avalon-MM Address
+	input  logic [11:0] AVL_ADDR,			// Avalon-MM Address
 	input  logic [31:0] AVL_WRITEDATA,		// Avalon-MM Write Data
 	output logic [31:0] AVL_READDATA,		// Avalon-MM Read Data
 	
@@ -52,12 +52,13 @@ module vga_text_avl_interface (
 logic pixel_clk, blank, sync;
 logic [9:0] DrawX, DrawY, Col, Row, CURR_REG, CURR_CHAR;
 logic [7:0] char, BITS;
-logic [31:0] REG_DATA, COLOR_REG;
+logic [3:0] COLOR_REG;
+logic [31:0] REG_DATA, COLOR_DATA;
 logic [10:0] FONT_INPUT;
 logic [2:0] pixel;
 
 //week 2
-logic [9:0] ADDR;
+logic [11:0] ADDR, COLOR_ADDR;
 
 //Declare submodules..e.g. VGA controller, ROMS, etc
 //module  vga_controller ( input        Clk,       // 50 MHz clock
@@ -74,7 +75,8 @@ logic [9:0] ADDR;
 vga_controller vga_controller(.Clk(CLK), .Reset(RESET), .hs(hs), .vs(vs), .pixel_clk(pixel_clk), .blank(blank), .sync(sync),
 					.DrawX(DrawX), .DrawY(DrawY));
 					
-byte_enabled_simple_dual_port_ram memBlock(.waddr(AVL_ADDR), .raddr(ADDR), .be(AVL_BYTE_EN), .wdata(AVL_WRITEDATA), .we(AVL_WRITE), .clk(CLK), .q(AVL_READDATA));
+byte_enabled_simple_dual_port_ram memBlock(.waddr(AVL_ADDR), .raddr(ADDR), .raddr2(COLOR_ADDR), .be(AVL_BYTE_EN), .wdata(AVL_WRITEDATA), .we(AVL_WRITE), 
+			.clk(CLK), .q(AVL_READDATA), .q2(COLOR_DATA));
 //module font_rom ( input [10:0]	addr,
 //						output [7:0]	data
 //					 );
@@ -127,7 +129,7 @@ begin
 	 Row=DrawY[9:4];  //row=drawy/16
 	
 	// CURR_REG=(Col+Row*80)/4; //=AVL_ADDR
-	 ADDR=(Col+Row*80)/4;
+	 ADDR=(Col+Row*80)/2;
 	
 	 CURR_CHAR=(Col+Row*80);  //80 char per row
 //end	
@@ -139,12 +141,10 @@ begin
 //
 //always_comb
 //begin
-	case(CURR_CHAR[1:0])
-		2'b00: char=REG_DATA[7:0];
-		2'b01: char=REG_DATA[15:8];
-		2'b10: char=REG_DATA[23:16];
-		2'b11: char=REG_DATA[31:24];
-		default: char=REG_DATA[7:0]; //wont get here
+	case(CURR_CHAR[0])
+		1'b0: char=REG_DATA[15:8];
+		1'b1: char=REG_DATA[31:24];
+		default: char=REG_DATA[15:8]; //wont get here
 	endcase
 
 
@@ -155,9 +155,43 @@ begin
 	 //COLOR_REG = LOCAL_REG[`CTRL_REG];
 end
 
-always_ff @(posedge CLK)
+always_ff @(posedge pixel_clk)
 begin
-	 COLOR_REG = AVL_READDATA;
+//	case(CURR_CHAR[0])
+//		1'b0: COLOR_REG = AVL_READDATA[7:0];
+//		1'b1: COLOR_REG = AVL_READDATA[23:16];
+//	endcase
+	
+//	if(BITS[pixel] == 1'b1 ^ char[7])
+//	begin
+//		COLOR_ADDR = 3'h800 + COLOR_REG[7:4]
+//	end
+
+if(CURR_CHAR[0] == 1'b0)
+begin
+	if(BITS[pixel] == (1'b1 ^ char[7]))
+	begin
+	COLOR_REG = AVL_READDATA[7:4];
+	end
+	else
+	begin
+	COLOR_REG = AVL_READDATA[3:0];
+	end
+end
+else
+begin
+	if(BITS[pixel] == (1'b1 ^ char[7]))
+	begin
+	COLOR_REG = AVL_READDATA[23:20];
+	end
+	else
+	begin
+	COLOR_REG = AVL_READDATA[19:16];
+	end
+end
+
+COLOR_ADDR = 3'h800 + COLOR_REG;	
+	
 end
 
 always_ff @(posedge pixel_clk)
@@ -166,15 +200,33 @@ begin
 	 begin
 		 if(BITS[pixel]==(1'b1 ^ char[7]))									//XOR char[7]
 		 begin
-			 red= COLOR_REG[24:21];
-			 green=COLOR_REG[20:17];
-			 blue=COLOR_REG[16:13];
+			if(COLOR_REG % 2 == 0)
+			begin
+				red= COLOR_DATA[12:9];
+				green=COLOR_DATA[8:5];
+				blue=COLOR_DATA[4:1];
+			end
+			else
+			begin
+				red= COLOR_DATA[24:21];
+				green=COLOR_DATA[20:17];
+				blue=COLOR_DATA[16:13];
+			end
 		 end
 		 else
 		 begin
-			 red=COLOR_REG[12:9];
-			 green=COLOR_REG[8:5];
-			 blue=COLOR_REG[4:1];
+			if(COLOR_REG % 2 == 0)
+			begin
+				red= COLOR_DATA[12:9];
+				green=COLOR_DATA[8:5];
+				blue=COLOR_DATA[4:1];
+			end
+			else
+			begin
+				red= COLOR_DATA[24:21];
+				green=COLOR_DATA[20:17];
+				blue=COLOR_DATA[16:13];
+			end
 		 end
 	end
 	else

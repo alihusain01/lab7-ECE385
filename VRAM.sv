@@ -12,11 +12,11 @@ module byte_enabled_simple_dual_port_ram
 )
 ( 
 	input [ADDR_WIDTH-1:0] waddr,
-	input [ADDR_WIDTH-1:0] raddr,
+	input [ADDR_WIDTH-1:0] raddr, raddr2, 
 	input [BYTES-1:0] be,
 	input [WIDTH-1:0] wdata, 
 	input we, clk,
-	output reg [WIDTH - 1:0] q
+	output reg [WIDTH - 1:0] q, q2
 );
 	localparam int WORDS = 1 << ADDR_WIDTH ;
 
@@ -33,5 +33,6 @@ module byte_enabled_simple_dual_port_ram
 			if(be[3]) ram[waddr][3] <= wdata[31:24];
 	end
 		q <= ram[raddr];
+		q2 <= ram[raddr2];
 	end
 endmodule : byte_enabled_simple_dual_port_ram
